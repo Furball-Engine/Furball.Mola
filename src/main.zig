@@ -91,10 +91,8 @@ fn triangle_area(a: Vector2, b: Vector2, c: Vector2) f32 {
     return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2;
 }
 
-fn get_barycentric_coordinates(a: Vector2, b: Vector2, c: Vector2, p: Vector2) Vector3 {
-    var bary: Vector3;
-
-    var total_area: f32 = triangle_area(a, b, c);
+fn get_barycentric_coordinates(total_area: f32, a: Vector2, b: Vector2, c: Vector2, p: Vector2) Vector3 {
+    var bary: Vector3 = .{.x = 0, .y = 0, .z = 0};
 
     // A \
     // |\   \
@@ -108,17 +106,34 @@ fn get_barycentric_coordinates(a: Vector2, b: Vector2, c: Vector2, p: Vector2) V
 
     //Get area of split triangles
     var abp_area: f32 = triangle_area(a, b, p); //OPPOSITE OF C
-    var acp_area: f32 = triangle_area(a, c, p); //OPPOSITE OF B
+    var cap_area: f32 = triangle_area(a, c, p); //OPPOSITE OF B
     var bcp_area: f32 = triangle_area(b, c, p); //OPPOSITE OF A
 
     bary.x = bcp_area / total_area; //A
-    bary.y = acp_area / total_area; //B
+    bary.y = cap_area / total_area; //B
     bary.z = abp_area / total_area; //C
 
     return bary;
 }
 
+fn get_triangle_interpolated_color(total_area: f32, a: Vertex, b: Vertex, c: Vertex, p: Vector2) Color {
+    var bary: Vector3 = get_barycentric_coordinates(total_area, a.position, b.position, c.position, p);
+
+    return .{
+        .r = (a.color.r * bary.x) + (b.color.r * bary.y) + (c.color.r * bary.z),
+        .g = (a.color.g * bary.x) + (b.color.g * bary.y) + (c.color.g * bary.z),
+        .b = (a.color.b * bary.x) + (b.color.b * bary.y) + (c.color.b * bary.z),
+        .a = (a.color.a * bary.x) + (b.color.a * bary.y) + (c.color.a * bary.z),
+    };
+}
+
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
+    var total_area: f32 = triangle_area(vtx1.position, vtx2.position, vtx3.position);
+
+    //Makes sure we dont do anything silly with a 0 area triangle
+    if(total_area == 0)
+        return;
+
     var t0: Vector2i = .{ .x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y) };
     var t1: Vector2i = .{ .x = @floatToInt(i32, vtx2.position.x), .y = @floatToInt(i32, vtx2.position.y) };
     var t2: Vector2i = .{ .x = @floatToInt(i32, vtx3.position.x), .y = @floatToInt(i32, vtx3.position.y) };
@@ -138,7 +153,9 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 });
+            var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
+            // col.a = 1;
+            set_bitmap_pixel(bitmap, j, y, col.to_rgba32());
         }
     }
     y = t1.y;
@@ -151,7 +168,9 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 }); // attention, due to int casts t0.y+i != A.y
+            var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
+            // col.a = 1;
+            set_bitmap_pixel(bitmap, j, y, col.to_rgba32()); // attention, due to int casts t0.y+i != A.y
         }
     }
 
