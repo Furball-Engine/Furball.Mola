@@ -106,17 +106,22 @@ fn get_barycentric_coordinates(total_area: f32, a: Vector2, b: Vector2, c: Vecto
 
     //Get area of split triangles
     var abp_area: f32 = triangle_area(a, b, p); //OPPOSITE OF C
-    var cap_area: f32 = triangle_area(a, c, p); //OPPOSITE OF B
+    var cap_area: f32 = triangle_area(c, a, p); //OPPOSITE OF B
     var bcp_area: f32 = triangle_area(b, c, p); //OPPOSITE OF A
 
     bary.x = bcp_area / total_area; //A
     bary.y = cap_area / total_area; //B
     bary.z = abp_area / total_area; //C
 
+    if(bary.x < 0) bary.x = -bary.x;
+    if(bary.y < 0) bary.y = -bary.y;
+    if(bary.z < 0) bary.z = -bary.z;
+
     return bary;
 }
 
 fn get_triangle_interpolated_color(total_area: f32, a: Vertex, b: Vertex, c: Vertex, p: Vector2) Color {
+    @setFloatMode(std.builtin.FloatMode.Optimized);
     var bary: Vector3 = get_barycentric_coordinates(total_area, a.position, b.position, c.position, p);
 
     return .{
@@ -128,6 +133,9 @@ fn get_triangle_interpolated_color(total_area: f32, a: Vertex, b: Vertex, c: Ver
 }
 
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
+    //Since we are doing interop stuff here, we want to specify strict mode
+    @setFloatMode(std.builtin.FloatMode.Strict);
+
     var total_area: f32 = triangle_area(vtx1.position, vtx2.position, vtx3.position);
 
     //Makes sure we dont do anything silly with a 0 area triangle
@@ -154,7 +162,6 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
             var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
-            // col.a = 1;
             set_bitmap_pixel(bitmap, j, y, col.to_rgba32());
         }
     }
@@ -169,7 +176,6 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
             var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
-            // col.a = 1;
             set_bitmap_pixel(bitmap, j, y, col.to_rgba32()); // attention, due to int casts t0.y+i != A.y
         }
     }
