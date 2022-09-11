@@ -2,6 +2,7 @@ const std = @import("std");
 const pixel_types = @import("pixel_types.zig");
 const Types = @import("types.zig");
 const RenderBitmap = Types.RenderBitmap;
+const rasterization = @import("rasterization.zig");
 
 const allocator = std.heap.page_allocator;
 
