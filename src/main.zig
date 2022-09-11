@@ -19,12 +19,12 @@ export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_
         pixel_types.pixel_type.rgba32 => {
             instance.pixel_type = pixel_types.pixel_type.rgba32;
             var ptr = std.c.malloc(@sizeOf(pixel_types.rgba32) * width * height);
-            instance.rgba32ptr = @ptrCast(*pixel_types.rgba32, ptr);
+            instance.rgba32ptr = @ptrCast([*]pixel_types.rgba32, ptr);
         },
         pixel_types.pixel_type.argb32 => {
             instance.pixel_type = pixel_types.pixel_type.argb32;
             var ptr = std.c.malloc(@sizeOf(pixel_types.argb32) * width * height);
-            instance.argb32ptr = @ptrCast(*pixel_types.argb32, ptr);
+            instance.argb32ptr = @ptrCast([*]pixel_types.argb32, ptr);
         }
     }
 
@@ -32,6 +32,23 @@ export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_
     instance.height = height;
 
     return instance;
+}
+
+export fn clear_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
+    var i: usize = 0;
+    var pixel_count: c_uint = bitmap.width * bitmap.height;
+    switch(bitmap.pixel_type) {
+        pixel_types.pixel_type.rgba32 => {
+            while(i < pixel_count) : (i += 1) {
+                bitmap.rgba32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 0};
+            }
+        },
+        pixel_types.pixel_type.argb32 => {
+            while(i < pixel_count) : (i += 1) {
+                bitmap.argb32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 0};
+            }
+        }
+    }
 }
 
 export fn delete_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
