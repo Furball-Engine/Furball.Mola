@@ -30,15 +30,16 @@ export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_
 export fn clear_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
     var i: usize = 0;
     var pixel_count: c_uint = bitmap.width * bitmap.height;
+
     switch(bitmap.pixel_type) {
         pixel_types.pixel_type.rgba32 => {
             while(i < pixel_count) : (i += 1) {
-                bitmap.rgba32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 0};
+                bitmap.rgba32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 255};
             }
         },
         pixel_types.pixel_type.argb32 => {
             while(i < pixel_count) : (i += 1) {
-                bitmap.argb32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 0};
+                bitmap.argb32ptr[i] = .{.r = 0, .g = 0, .b = 0, .a = 255};
             }
         }
     }
