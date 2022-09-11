@@ -4,6 +4,7 @@ const Types = @import("types.zig");
 const RenderBitmap = Types.RenderBitmap;
 
 const Vector2 = @import("types.zig").Vector2;
+const Vector3 = @import("types.zig").Vector3;
 const Vector2i = @import("types.zig").Vector2i;
 const Color = @import("pixel_types.zig").rgba128;
 const Vertex = @import("types.zig").Vertex;
@@ -85,6 +86,38 @@ fn lerp(p0: f32, p1: f32, t: f32) f32 {
     return p0 + (p1 - p0) * t;
 }
 
+//https://ncalculators.com/geometry/triangle-area-by-3-points.htm
+fn triangle_area(a: Vector2, b: Vector2, c: Vector2) f32 {
+    return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2;
+}
+
+fn get_barycentric_coordinates(a: Vector2, b: Vector2, c: Vector2, p: Vector2) Vector3 {
+    var bary: Vector3;
+
+    var total_area: f32 = triangle_area(a, b, c);
+
+    // A \
+    // |\   \
+    // | \     \ 
+    // |   \      \ 
+    // |     p-------C
+    // |   /      /
+    // | /     /
+    // |/   /     
+    // B /
+
+    //Get area of split triangles
+    var abp_area: f32 = triangle_area(a, b, p); //OPPOSITE OF C
+    var acp_area: f32 = triangle_area(a, c, p); //OPPOSITE OF B
+    var bcp_area: f32 = triangle_area(b, c, p); //OPPOSITE OF A
+
+    bary.x = bcp_area / total_area; //A
+    bary.y = acp_area / total_area; //B
+    bary.z = abp_area / total_area; //C
+
+    return bary;
+}
+
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
     var t0: Vector2i = .{ .x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y) };
     var t1: Vector2i = .{ .x = @floatToInt(i32, vtx2.position.x), .y = @floatToInt(i32, vtx2.position.y) };
@@ -106,7 +139,6 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
             set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 });
-            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y
         }
     }
     y = t1.y;
@@ -119,8 +151,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 });
-            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y
+            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 }); // attention, due to int casts t0.y+i != A.y
         }
     }
 
