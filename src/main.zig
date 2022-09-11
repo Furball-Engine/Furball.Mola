@@ -1,16 +1,9 @@
 const std = @import("std");
 const pixel_types = @import("pixel_types.zig");
 const Types = @import("types.zig");
-const MolaInstance = Types.MolaInstance;
 const RenderBitmap = Types.RenderBitmap;
 
 const allocator = std.heap.c_allocator;
-
-export fn init() callconv(.C) *MolaInstance {
-    var instance: *MolaInstance = allocator.create(MolaInstance) catch std.os.abort();
-
-    return instance;
-}
 
 export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_types.pixel_type) callconv(.C) *RenderBitmap {
     var instance: *RenderBitmap = allocator.create(RenderBitmap) catch std.os.abort();
@@ -60,8 +53,4 @@ export fn delete_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
             std.c.free(bitmap.argb32ptr);
         }
     }
-}
-
-export fn deinit(instance: *MolaInstance) callconv(.C) void {
-    allocator.destroy(instance);
 }
