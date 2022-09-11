@@ -2,7 +2,6 @@ const std = @import("std");
 const pixel_types = @import("pixel_types.zig");
 const Types = @import("types.zig");
 const RenderBitmap = Types.RenderBitmap;
-const rasterization = @import("rasterization.zig");
 
 const Vector2 = @import("types.zig").Vector2;
 const Color = @import("pixel_types.zig").rgba128;
@@ -73,45 +72,100 @@ export fn draw_onto_bitmap(bitmap: *RenderBitmap, vertices: [*]Vertex, indices: 
     }
 }
 
-fn area_of_triangle(p1: Vector2, p2: Vector2, p3: Vector2) f32 { //find area of triangle formed by p1, p2 and p3
-    var f: f32 = (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)) / 2.0;
-
-    if (f < 0)
-        f = -f;
-
-    return f;
-}
-
-fn point_in_triangle(p1: Vector2, p2: Vector2, p3: Vector2, p: Vector2) bool {
-    var area = area_of_triangle(p1, p2, p3); //area of triangle ABC
-    var area1 = area_of_triangle(p, p2, p3); //area of PBC
-    var area2 = area_of_triangle(p1, p, p3); //area of APC
-    var area3 = area_of_triangle(p1, p2, p); //area of ABP
-
-    return (area == area1 + area2 + area3); //when three triangles are forming the whole triangle
-}
-
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
-    //Get bounding box
-    var bounding_left: f32 = std.math.min3(vtx1.position.x, vtx2.position.x, vtx3.position.x);
-    var bounding_right = std.math.max3(vtx1.position.x, vtx2.position.x, vtx3.position.x);
-    var bounding_top = std.math.min3(vtx1.position.y, vtx2.position.y, vtx3.position.y);
-    var bounding_bottom = std.math.max3(vtx1.position.y, vtx2.position.y, vtx3.position.y);
+    var ax0: i32 = @floatToInt(i32, vtx1.position.x);
+    var ay0: i32 = @floatToInt(i32, vtx1.position.y);
+    var ax1: i32 = @floatToInt(i32, vtx2.position.x);
+    var ay1: i32 = @floatToInt(i32, vtx2.position.y);
+    var ax2: i32 = @floatToInt(i32, vtx3.position.x);
+    var ay2: i32 = @floatToInt(i32, vtx3.position.y); 
+    
+    if (ay0>ay1) {
+        swap_ints(&ax0, &ax1);
+        swap_ints(&ay0, &ay1);
+    }
+    if (ay0>ay2) {
+        swap_ints(&ax0, &ax2);
+        swap_ints(&ay0, &ay2);
+    }
+    if (ay1>ay2) {
+        swap_ints(&ax1, &ax2);
+        swap_ints(&ay1, &ay2);
+    }
 
-    std.debug.print("bounding box: {d} {d} {d} {d}\n", .{bounding_left, bounding_right, bounding_top, bounding_bottom});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.r = 0, .g = 255, .b = 0, .a = 0});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.r = 0, .g = 255, .b = 0, .a = 0});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.r = 255, .g = 0, .b = 0, .a = 0});
+}
 
-    //Iterate over all pixels in bounding box
-    var x: usize = @floatToInt(usize, bounding_left);
-    var y: usize = @floatToInt(usize, bounding_top);
+fn swap_ints(x: *i32, y: *i32) void {
+    //Set X to the sum of the 2
+    x.* = x.* + y.*;
+    //Get the original X value out and place it in Y
+    y.* = x.* - y.*;
+    //Get the original Y value out using the original X and place it in X
+    x.* = x.* - y.*;
+}
 
-    while (@intToFloat(f32, x) <= bounding_right) : (x += 1) {
-        y = @floatToInt(usize, bounding_top);
-        while (@intToFloat(f32, y) <= bounding_bottom) : (y += 1) {
-            if (point_in_triangle(vtx1.position, vtx2.position, vtx3.position, Vector2{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) })) {
-                bitmap.rgba32ptr[(y * @intCast(usize, bitmap.width)) + x].r = 255;
-                bitmap.rgba32ptr[(y * @intCast(usize, bitmap.width)) + x].g = 255;
-                bitmap.rgba32ptr[(y * @intCast(usize, bitmap.width)) + x].b = 255;
-            }
+export fn set_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32, col: pixel_types.rgba32) callconv(.C) void {
+    if(x >= bitmap.width or y >= bitmap.height)
+        return;
+
+    var pos = (@intCast(usize, y) * @intCast(usize, bitmap.width)) + @intCast(usize, x);
+
+    switch (bitmap.pixel_type) {
+        pixel_types.pixel_type.rgba32 => {
+            bitmap.rgba32ptr[pos] = col;
+        },
+        pixel_types.pixel_type.argb32 => {
+            bitmap.argb32ptr[pos].r = col.r;
+            bitmap.argb32ptr[pos].g = col.g;
+            bitmap.argb32ptr[pos].b = col.b;
+            bitmap.argb32ptr[pos].a = col.a;
+        },
+    }
+}
+
+export fn rasterize_line(bitmap: *RenderBitmap, p0: Vector2, p1: Vector2, col: pixel_types.rgba32) callconv(.C) void {
+    var ax0: i32 = @floatToInt(i32, p0.x);
+    var ay0: i32 = @floatToInt(i32, p0.y);
+    var ax1: i32 = @floatToInt(i32, p1.x);
+    var ay1: i32 = @floatToInt(i32, p1.y);
+
+    std.debug.print("Drawing line with points {d}x{d},{d}x{d}\n", .{ax0, ay0, ax1, ay1});
+
+    var steep: bool = false;
+    //Check whether the the difference in X is less than the difference in Y (aka is slope greater than 0.5)
+    if ((std.math.absInt(ax0 - ax1) catch @panic("Unable to ABS x0 and x1")) < (std.math.absInt(ay0 - ay1) catch @panic("Unable to ABS y0 and y1"))) {
+        swap_ints(&ax0, &ay0);
+        swap_ints(&ax1, &ay1);
+        steep = true;
+    }
+    //If the first point is to the right of the second point, swap the points
+    if (ax0 > ax1) {
+        swap_ints(&ax0, &ax1);
+        swap_ints(&ay0, &ay1);
+    }
+    //Get the difference in X
+    var dx: i32 = ax1 - ax0;
+    //Get the difference in Y
+    var dy: i32 = ay1 - ay0;
+    //The error in difference
+    var derror2: i32 = (std.math.absInt(dy) catch @panic("Unable to ABS dy")) * 2;
+    //The distance to the best straight line from our current position
+    var error2: i32 = 0;
+    var y: i32 = ay0;
+    var x: i32 = ax0;
+    while (x <= ax1) : (x += 1) {
+        if (steep) {
+            set_bitmap_pixel(bitmap, y, x, col);
+        } else {
+            set_bitmap_pixel(bitmap, x, y, col);
+        }
+        error2 += derror2;
+        if (error2 > dx) {
+            y += (if (ay1 > ay0) 1 else -1);
+            error2 -= dx * 2;
         }
     }
 }
