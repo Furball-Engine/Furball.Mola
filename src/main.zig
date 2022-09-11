@@ -3,7 +3,7 @@ const pixel_types = @import("pixel_types.zig");
 const Types = @import("types.zig");
 const RenderBitmap = Types.RenderBitmap;
 
-const allocator = std.heap.c_allocator;
+const allocator = std.heap.page_allocator;
 
 export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_types.pixel_type) callconv(.C) *RenderBitmap {
     var instance: *RenderBitmap = allocator.create(RenderBitmap) catch std.os.abort();
@@ -11,13 +11,13 @@ export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_
     switch(pixel_type) {
         pixel_types.pixel_type.rgba32 => {
             instance.pixel_type = pixel_types.pixel_type.rgba32;
-            var ptr = std.c.malloc(@sizeOf(pixel_types.rgba32) * width * height);
-            instance.rgba32ptr = @ptrCast([*]pixel_types.rgba32, ptr);
+            var arr: []pixel_types.rgba32 = allocator.alloc(pixel_types.rgba32, width * height) catch @panic("Out of memory!");
+            instance.rgba32ptr = arr.ptr;
         },
         pixel_types.pixel_type.argb32 => {
             instance.pixel_type = pixel_types.pixel_type.argb32;
-            var ptr = std.c.malloc(@sizeOf(pixel_types.argb32) * width * height);
-            instance.argb32ptr = @ptrCast([*]pixel_types.argb32, ptr);
+            var arr: []pixel_types.argb32 = allocator.alloc(pixel_types.argb32, width * height) catch @panic("Out of memory!");
+            instance.argb32ptr = arr.ptr;
         }
     }
 
@@ -48,10 +48,10 @@ export fn clear_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
 export fn delete_render_bitmap(bitmap: *RenderBitmap) callconv(.C) void {
     switch(bitmap.pixel_type) {
         pixel_types.pixel_type.rgba32 => {
-            std.c.free(bitmap.rgba32ptr);
+            allocator.free(bitmap.rgba32ptr[0..(bitmap.width * bitmap.height)]);
         },
         pixel_types.pixel_type.argb32 => {
-            std.c.free(bitmap.argb32ptr);
+            allocator.free(bitmap.argb32ptr[0..(bitmap.width * bitmap.height)]);
         }
     }
 }
