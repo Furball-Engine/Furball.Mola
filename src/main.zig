@@ -81,44 +81,48 @@ fn i(float: f32) i32 {
     return @floatToInt(i32, float);
 }
 
+fn lerp(p0: f32, p1: f32, t: f32) f32 {
+    return p0 + (p1 - p0) * t;
+}
+
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
-    var t0: Vector2i = .{.x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y)};
-    var t1: Vector2i = .{.x = @floatToInt(i32, vtx2.position.x), .y = @floatToInt(i32, vtx2.position.y)};
-    var t2: Vector2i = .{.x = @floatToInt(i32, vtx3.position.x), .y = @floatToInt(i32, vtx3.position.y)};
+    var t0: Vector2i = .{ .x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y) };
+    var t1: Vector2i = .{ .x = @floatToInt(i32, vtx2.position.x), .y = @floatToInt(i32, vtx2.position.y) };
+    var t2: Vector2i = .{ .x = @floatToInt(i32, vtx3.position.x), .y = @floatToInt(i32, vtx3.position.y) };
 
-    if (t0.y>t1.y) std.mem.swap(Vector2i, &t0, &t1);
-    if (t0.y>t2.y) std.mem.swap(Vector2i, &t0, &t2);
-    if (t1.y>t2.y) std.mem.swap(Vector2i, &t1, &t2);
+    if (t0.y > t1.y) std.mem.swap(Vector2i, &t0, &t1);
+    if (t0.y > t2.y) std.mem.swap(Vector2i, &t0, &t2);
+    if (t1.y > t2.y) std.mem.swap(Vector2i, &t1, &t2);
 
-    var total_height: i32 = t2.y-t0.y; 
+    var total_height: i32 = t2.y - t0.y;
     var y: i32 = t0.y;
-    while(y <= t1.y) : (y += 1) {
-        var segment_height: i32 = t1.y-t0.y+1; 
-        var alpha: f32 = f(y-t0.y)/f(total_height); 
-        var beta: f32  = f(y-t0.y)/f(segment_height); // be careful with divisions by zero 
-        var a: Vector2i = .{.x = i(f(t0.x) + f(t2.x-t0.x)*alpha), .y = i(f(t0.y) + f(t2.y-t0.y)*alpha)}; 
-        var b: Vector2i = .{.x = i(f(t0.x) + f(t1.x-t0.x)*beta), .y = i(f(t0.y) + f(t1.y-t0.y)*beta)}; 
-        if (a.x>b.x) std.mem.swap(Vector2i, &a, &b); 
+    while (y <= t1.y) : (y += 1) {
+        var segment_height: i32 = t1.y - t0.y + 1;
+        var alpha: f32 = f(y - t0.y) / f(total_height);
+        var beta: f32 = f(y - t0.y) / f(segment_height); // be careful with divisions by zero
+        var a: Vector2i = .{ .x = i(f(t0.x) + f(t2.x - t0.x) * alpha), .y = i(f(t0.y) + f(t2.y - t0.y) * alpha) };
+        var b: Vector2i = .{ .x = i(f(t0.x) + f(t1.x - t0.x) * beta), .y = i(f(t0.y) + f(t1.y - t0.y) * beta) };
+        if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
-        while(j <= b.x) : (j += 1) {
-            set_bitmap_pixel(bitmap, j, y, .{.r = 255, .g = 255, .b = 255, .a = 255});
-            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y 
-        } 
-    }   
+        while (j <= b.x) : (j += 1) {
+            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 });
+            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y
+        }
+    }
     y = t1.y;
-    while(y <= t2.y) : (y += 1) {
-        var segment_height: i32 =  t2.y-t1.y+1; 
-        var alpha: f32 = f(y-t0.y)/f(total_height); 
-        var beta: f32  = f(y-t1.y)/f(segment_height); // be careful with divisions by zero 
-        var a: Vector2i = .{.x = i(f(t0.x) + f(t2.x-t0.x)*alpha), .y = i(f(t0.y) + f(t2.y-t0.y)*alpha)}; 
-        var b: Vector2i = .{.x = i(f(t1.x) + f(t2.x-t1.x)*beta), .y = i(f(t1.y) + f(t2.y-t1.y)*beta)}; 
-        if (a.x>b.x) std.mem.swap(Vector2i, &a, &b); 
+    while (y <= t2.y) : (y += 1) {
+        var segment_height: i32 = t2.y - t1.y + 1;
+        var alpha: f32 = f(y - t0.y) / f(total_height);
+        var beta: f32 = f(y - t1.y) / f(segment_height); // be careful with divisions by zero
+        var a: Vector2i = .{ .x = i(f(t0.x) + f(t2.x - t0.x) * alpha), .y = i(f(t0.y) + f(t2.y - t0.y) * alpha) };
+        var b: Vector2i = .{ .x = i(f(t1.x) + f(t2.x - t1.x) * beta), .y = i(f(t1.y) + f(t2.y - t1.y) * beta) };
+        if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
-        while(j <= b.x) : (j += 1) {
-            set_bitmap_pixel(bitmap, j, y, .{.r = 255, .g = 255, .b = 255, .a = 255});
-            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y 
-        } 
-    } 
+        while (j <= b.x) : (j += 1) {
+            set_bitmap_pixel(bitmap, j, y, .{ .r = 255, .g = 255, .b = 255, .a = 255 });
+            // image.set(j, y, color); // attention, due to int casts t0.y+i != A.y
+        }
+    }
 
     // rasterize_line(bitmap, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
     // rasterize_line(bitmap, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
