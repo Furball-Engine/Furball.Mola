@@ -93,9 +93,9 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         swap_ints(&ay1, &ay2);
     }
 
-    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.r = 0, .g = 255, .b = 0, .a = 0});
-    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.r = 0, .g = 255, .b = 0, .a = 0});
-    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.r = 255, .g = 0, .b = 0, .a = 0});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
+    rasterize_line(bitmap, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.r = 255, .g = 0, .b = 0, .a = 255});
 }
 
 fn swap_ints(x: *i32, y: *i32) void {
