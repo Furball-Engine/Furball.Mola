@@ -183,11 +183,11 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
             var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
-            var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
-            var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
-            var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
-            var mul_col: ColorRgba32 = col.to_rgba32().mul(tex_col).alpha_blend(get_bitmap_pixel(bitmap, j, y));
-            set_bitmap_pixel(bitmap, j, y, mul_col);
+            var vertex_color: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
+            var tex_coord: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
+            var tex_color: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex_coord);
+
+            set_bitmap_pixel(bitmap, j, y, vertex_color.to_rgba32().mul(tex_color).alpha_blend(get_bitmap_pixel(bitmap, j, y)));
         }
     }
     y = t1.y;
@@ -201,11 +201,11 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
             var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
-            var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
-            var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
-            var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
-            var mul_col: ColorRgba32 = col.to_rgba32().mul(tex_col).alpha_blend(get_bitmap_pixel(bitmap, j, y));
-            set_bitmap_pixel(bitmap, j, y, mul_col);
+            var vertex_color: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
+            var tex_coord: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
+            var tex_color: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex_coord);
+
+            set_bitmap_pixel(bitmap, j, y, vertex_color.to_rgba32().mul(tex_color).alpha_blend(get_bitmap_pixel(bitmap, j, y)));
         }
     }
 

@@ -2,7 +2,9 @@ const PixelType = @import("pixel_types.zig");
 
 pub const RenderBitmap = extern struct { pixel_type: PixelType.pixel_type, width: c_uint, height: c_uint, rgba32ptr: [*]PixelType.rgba32, argb32ptr: [*]PixelType.argb32 };
 
-pub const Vector2 = extern struct { x: f32, y: f32 };
+pub const Vector2 = extern struct { x: f32, y: f32, pub fn eq(self: Vector2, v2: Vector2) bool {
+    return self.x == v2.x and self.y == v2.y;
+}};
 pub const Vector3 = extern struct { x: f32, y: f32, z: f32 };
 pub const Vector2i = extern struct { x: i32, y: i32 };
 

@@ -44,28 +44,12 @@ pub const rgba32 = extern struct {
         };
     }
     pub fn alpha_blend(self: rgba32, col: rgba32) rgba32 {
-        
-
         return .{
             .r = alpha_blend_single(self.r, col.r, self.a), 
             .g = alpha_blend_single(self.g, col.g, self.a), 
             .b = alpha_blend_single(self.b, col.b, self.a), 
             .a = 255
         };
-        //#define INT_LERP(p, q, a, t) ( (p) + INT_MULT( a, ( (q) - (p) ), t ) )
-
-        // @setFloatMode(std.builtin.FloatMode.Optimized);
-        // var x: rgba128 = self.to_rgba128();
-        // var y: rgba128 = col.to_rgba128();
-
-        // var a0: f32 = x.a + (y.a * (1 - x.a));
-
-        // return .{
-        //     .r = tu8(blend(x.r, y.r, x, y) / a0 * 255),
-        //     .g = tu8(blend(x.g, y.g, x, y) / a0 * 255),
-        //     .b = tu8(blend(x.b, y.b, x, y) / a0 * 255),
-        //     .a = tu8(blend(x.a, y.a, x, y) / a0 * 255)
-        // };
     }
     pub fn to_rgba128(self: rgba32) rgba128 {
         @setFloatMode(std.builtin.FloatMode.Optimized);
@@ -75,6 +59,9 @@ pub const rgba32 = extern struct {
             .b = fu8(self.b) / 255,
             .a = fu8(self.a) / 255,
         };
+    }
+    pub fn eq(self: rgba32, col: rgba32) bool {
+        return self.r == col.r and self.g == col.g and self.b == col.b and self.a == col.a;
     }
     pub fn to_argb32(self: rgba32) argb32 {
         return .{.r = self.r, .g = self.g, .b = self.b, .a = self.a};
@@ -96,11 +83,14 @@ pub const rgba128 = extern struct {
     g: f32,
     b: f32,
     a: f32,
-    pub fn lerp_color(self: *rgba128, c1: rgba128, t: f32) rgba128 {
+    pub fn lerp_color(self: rgba128, c1: rgba128, t: f32) rgba128 {
         return .{ .r = lerp(self.r, c1.r, t), .g = lerp(self.g, c1.g, t), .b = lerp(self.b, c1.b, t), .a = lerp(self.a, c1.a, t) };
     }
-    pub fn to_rgba32(self: *rgba128) rgba32 {
+    pub fn to_rgba32(self: rgba128) rgba32 {
         return .{ .r = @floatToInt(u8, math.clamp(self.r, 0, 1) * 255), .g = @floatToInt(u8, math.clamp(self.g, 0, 1) * 255), .b = @floatToInt(u8, math.clamp(self.b, 0, 1) * 255), .a = @floatToInt(u8, math.clamp(self.a, 0, 1) * 255) };
+    }
+    pub fn eq(self: rgba128, col: rgba128) bool {
+        return self.r == col.r and self.g == col.g and self.b == col.b and self.a == col.a;
     }
 };
 
