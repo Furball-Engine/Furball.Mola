@@ -32,6 +32,11 @@ export fn create_render_bitmap(width: c_uint, height: c_uint, pixel_type: pixel_
     instance.width = width;
     instance.height = height;
 
+    instance.scissor_x = 0;
+    instance.scissor_y = 0;
+    instance.scissor_w = width;
+    instance.scissor_h = height;
+
     return instance;
 }
 
@@ -182,6 +187,10 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
+            if(j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
+                y < bitmap.scissor_y or y > bitmap.scissor_y + bitmap.scissor_h)
+                continue;
+
             var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
             var vertex_color: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex_coord: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
@@ -200,6 +209,10 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
+            if(j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
+                y < bitmap.scissor_y or y > bitmap.scissor_y + bitmap.scissor_h)
+                continue;
+
             var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
             var vertex_color: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex_coord: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
