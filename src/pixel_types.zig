@@ -27,14 +27,20 @@ pub const rgba32 = extern struct {
     b: u8, 
     a: u8,
     pub fn mul(self: rgba32, col: rgba32) rgba32 {
-        @setFloatMode(std.builtin.FloatMode.Optimized);
-        const shift: u16 = 0x0008;
-        const add: u16 = 0x00FF;
+        var r: u16 = 0;
+        var g: u16 = 0;
+        var b: u16 = 0;
+        var a: u16 = 0;
+        _ = @mulWithOverflow(u16, self.r, col.r, &r);
+        _ = @mulWithOverflow(u16, self.g, col.g, &g);
+        _ = @mulWithOverflow(u16, self.b, col.b, &b);
+        _ = @mulWithOverflow(u16, self.a, col.a, &a);
+
         return .{
-            .r = @intCast(u8, (self.r * col.r + add) >> shift),
-            .g = @intCast(u8, (self.g * col.g + add) >> shift),
-            .b = @intCast(u8, (self.b * col.b + add) >> shift),
-            .a = @intCast(u8, (self.a * col.a + add) >> shift),
+            .r = @truncate(u8, (r + 255) / 256),
+            .g = @truncate(u8, (g + 255) / 256),
+            .b = @truncate(u8, (b + 255) / 256),
+            .a = @truncate(u8, (a + 255) / 256),
         };
     }
     pub fn alpha_blend(self: rgba32, col: rgba32) rgba32 {
