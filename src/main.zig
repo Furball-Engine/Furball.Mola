@@ -141,9 +141,10 @@ fn get_triangle_interpolated_tex_coord(a: Vertex, b: Vertex, c: Vertex, bary: Ve
 }
 
 fn sample_texture(bitmap: *RenderBitmap, tex_coord: Vector2) ColorRgba32 {
+    @setFloatMode(std.builtin.FloatMode.Optimized);
     var finalCoords: Vector2i = .{
-        .x = std.math.clamp(i(tex_coord.x * @intToFloat(f32, bitmap.width)), 0, @intCast(i32, bitmap.width)), 
-        .y = std.math.clamp(i(tex_coord.y * @intToFloat(f32, bitmap.width)), 0, @intCast(i32, bitmap.height))
+        .x = @mod(i(tex_coord.x * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.width)), 
+        .y = @mod(i(tex_coord.y * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.height))
     };
 
     switch(bitmap.pixel_type) {

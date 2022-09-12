@@ -17,20 +17,28 @@ fn tu8(float: f32) u8 {
     return @floatToInt(u8, float);
 }
 
+fn tu16(int: u8) u16 {
+    return @intCast(u16, int);
+}
+
 pub const rgba32 = extern struct { 
     r: u8, 
     g: u8, 
     b: u8, 
     a: u8,
     pub fn mul(self: rgba32, col: rgba32) rgba32 {
+        @setFloatMode(std.builtin.FloatMode.Optimized);
+        const shift: u16 = 0x0008;
+        const add: u16 = 0x00FF;
         return .{
-            .r = tu8(f(self.r) * (f(col.r) / 255)),
-            .g = tu8(f(self.g) * (f(col.g) / 255)),
-            .b = tu8(f(self.b) * (f(col.b) / 255)),
-            .a = tu8(f(self.a) * (f(col.a) / 255)),
+            .r = @intCast(u8, (self.r * col.r + add) >> shift),
+            .g = @intCast(u8, (self.g * col.g + add) >> shift),
+            .b = @intCast(u8, (self.b * col.b + add) >> shift),
+            .a = @intCast(u8, (self.a * col.a + add) >> shift),
         };
     }
     pub fn alpha_blend(self: rgba32, col: rgba32) rgba32 {
+        @setFloatMode(std.builtin.FloatMode.Optimized);
         var x: rgba128 = self.to_rgba128();
         var y: rgba128 = col.to_rgba128();
 
@@ -44,6 +52,7 @@ pub const rgba32 = extern struct {
         };
     }
     pub fn to_rgba128(self: rgba32) rgba128 {
+        @setFloatMode(std.builtin.FloatMode.Optimized);
         return .{
             .r = fu8(self.r) / 255,
             .g = fu8(self.g) / 255,
@@ -72,7 +81,12 @@ pub const rgba128 = extern struct {
         return .{ .r = lerp(self.r, c1.r, t), .g = lerp(self.g, c1.g, t), .b = lerp(self.b, c1.b, t), .a = lerp(self.a, c1.a, t) };
     }
     pub fn to_rgba32(self: *rgba128) rgba32 {
-        return .{ .r = @floatToInt(u8, math.clamp(self.r, 0, 1) * 255), .g = @floatToInt(u8, math.clamp(self.g, 0, 1) * 255), .b = @floatToInt(u8, math.clamp(self.b, 0, 1) * 255), .a = @floatToInt(u8, math.clamp(self.a, 0, 1) * 255) };
+        return .{ 
+            .r = @floatToInt(u8, math.clamp(self.r, 0, 1) * 255), 
+            .g = @floatToInt(u8, math.clamp(self.g, 0, 1) * 255), 
+            .b = @floatToInt(u8, math.clamp(self.b, 0, 1) * 255), 
+            .a = @floatToInt(u8, math.clamp(self.a, 0, 1) * 255) 
+        };
     }
 };
 
