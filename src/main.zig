@@ -191,7 +191,8 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
             var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
             var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
-            set_bitmap_pixel(bitmap, j, y, col.to_rgba32().mul(tex_col));
+            var mul_col: ColorRgba32 = col.to_rgba32().mul(tex_col).alpha_blend(get_bitmap_pixel(bitmap, j, y));
+            set_bitmap_pixel(bitmap, j, y, mul_col);
         }
     }
     y = t1.y;
@@ -208,8 +209,8 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
             var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
             var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
-            set_bitmap_pixel(bitmap, j, y, col.to_rgba32().mul(tex_col));
-            // set_bitmap_pixel(bitmap, j, y, tex_col);
+            var mul_col: ColorRgba32 = col.to_rgba32().mul(tex_col).alpha_blend(get_bitmap_pixel(bitmap, j, y));
+            set_bitmap_pixel(bitmap, j, y, mul_col);
         }
     }
 
@@ -233,6 +234,24 @@ export fn set_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32, col: pixel_typ
             bitmap.argb32ptr[pos].g = col.g;
             bitmap.argb32ptr[pos].b = col.b;
             bitmap.argb32ptr[pos].a = col.a;
+        },
+    }
+}
+
+export fn get_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32) callconv(.C) ColorRgba32 {
+    if(x >= bitmap.width or y >= bitmap.height)
+        return .{.r = 0, .g = 0, .b = 0, .a = 0};
+
+    var pos = (@intCast(usize, y) * @intCast(usize, bitmap.width)) + @intCast(usize, x);
+
+    switch (bitmap.pixel_type) {
+        pixel_types.pixel_type.rgba32 => {
+            return bitmap.rgba32ptr[pos];
+        },
+        pixel_types.pixel_type.argb32 => {
+            var col: ColorRgba32 = .{.r = bitmap.argb32ptr[pos].r, .g = bitmap.argb32ptr[pos].g, .b = bitmap.argb32ptr[pos].b, .a = bitmap.argb32ptr[pos].a};
+
+            return col;
         },
     }
 }

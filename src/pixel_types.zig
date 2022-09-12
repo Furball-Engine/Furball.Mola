@@ -5,6 +5,10 @@ fn f(int: i32) f32 {
     return @intToFloat(f32, int);
 }
 
+fn fu8(int: u8) f32 {
+    return @intToFloat(f32, int);
+}
+
 fn i(float: f32) i32 {
     return @floatToInt(i32, float);
 }
@@ -26,7 +30,32 @@ pub const rgba32 = extern struct {
             .a = tu8(f(self.a) * (f(col.a) / 255)),
         };
     }
+    pub fn alpha_blend(self: rgba32, col: rgba32) rgba32 {
+        var x: rgba128 = self.to_rgba128();
+        var y: rgba128 = col.to_rgba128();
+
+        var a0: f32 = x.a + (y.a * (1 - x.a));
+
+        return .{
+            .r = tu8(blend(x.r, y.r, x, y) / a0 * 255),
+            .g = tu8(blend(x.g, y.g, x, y) / a0 * 255),
+            .b = tu8(blend(x.b, y.b, x, y) / a0 * 255),
+            .a = tu8(blend(x.a, y.a, x, y) / a0 * 255)
+        };
+    }
+    pub fn to_rgba128(self: rgba32) rgba128 {
+        return .{
+            .r = fu8(self.r) / 255,
+            .g = fu8(self.g) / 255,
+            .b = fu8(self.b) / 255,
+            .a = fu8(self.a) / 255,
+        };
+    }
 };
+
+fn blend(a: f32, b: f32, x: rgba128, y: rgba128) f32 {
+    return (a * x.a) + ((b * y.a) * (1 - x.a));
+}
 
 pub const argb32 = extern struct { a: u8, r: u8, g: u8, b: u8 };
 
