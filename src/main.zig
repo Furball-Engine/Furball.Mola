@@ -7,6 +7,8 @@ const Vector2 = @import("types.zig").Vector2;
 const Vector3 = @import("types.zig").Vector3;
 const Vector2i = @import("types.zig").Vector2i;
 const Color = @import("pixel_types.zig").rgba128;
+const ColorRgba32 = @import("pixel_types.zig").rgba32;
+const ColorArgb32 = @import("pixel_types.zig").argb32;
 const Vertex = @import("types.zig").Vertex;
 
 const allocator = std.heap.page_allocator;
@@ -120,16 +122,39 @@ fn get_barycentric_coordinates(total_area: f32, a: Vector2, b: Vector2, c: Vecto
     return bary;
 }
 
-fn get_triangle_interpolated_color(total_area: f32, a: Vertex, b: Vertex, c: Vertex, p: Vector2) Color {
+fn get_triangle_interpolated_color(a: Vertex, b: Vertex, c: Vertex, bary: Vector3) Color {
     @setFloatMode(std.builtin.FloatMode.Optimized);
-    var bary: Vector3 = get_barycentric_coordinates(total_area, a.position, b.position, c.position, p);
-
     return .{
         .r = (a.color.r * bary.x) + (b.color.r * bary.y) + (c.color.r * bary.z),
         .g = (a.color.g * bary.x) + (b.color.g * bary.y) + (c.color.g * bary.z),
         .b = (a.color.b * bary.x) + (b.color.b * bary.y) + (c.color.b * bary.z),
         .a = (a.color.a * bary.x) + (b.color.a * bary.y) + (c.color.a * bary.z),
     };
+}
+
+fn get_triangle_interpolated_tex_coord(a: Vertex, b: Vertex, c: Vertex, bary: Vector3) Vector2 {
+    @setFloatMode(std.builtin.FloatMode.Optimized);
+    return .{
+        .x = (a.texture_coordinate.x * bary.x) + (b.texture_coordinate.x * bary.y) + (c.texture_coordinate.x * bary.z),
+        .y = (a.texture_coordinate.y * bary.x) + (b.texture_coordinate.y * bary.y) + (c.texture_coordinate.y * bary.z)
+    };
+}
+
+fn sample_texture(bitmap: *RenderBitmap, tex_coord: Vector2) ColorRgba32 {
+    var finalCoords: Vector2i = .{
+        .x = std.math.clamp(i(tex_coord.x * @intToFloat(f32, bitmap.width)), 0, @intCast(i32, bitmap.width)), 
+        .y = std.math.clamp(i(tex_coord.y * @intToFloat(f32, bitmap.width)), 0, @intCast(i32, bitmap.height))
+    };
+
+    switch(bitmap.pixel_type) {
+        pixel_types.pixel_type.rgba32 => {
+            return bitmap.rgba32ptr[(@intCast(usize, finalCoords.y) * @intCast(usize, bitmap.width)) + @intCast(usize, finalCoords.x)];
+        },
+        pixel_types.pixel_type.argb32 => {
+            var argb32_col: ColorArgb32 = bitmap.argb32ptr[(@intCast(usize, finalCoords.y) * @intCast(usize, bitmap.width)) + @intCast(usize, finalCoords.x)];
+            return .{.r = argb32_col.r, .g = argb32_col.g, .b = argb32_col.b, .a = argb32_col.a};
+        }
+    }
 }
 
 export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, vtx3: Vertex) callconv(.C) void {
@@ -153,6 +178,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
     var total_height: i32 = t2.y - t0.y;
     var y: i32 = t0.y;
     while (y <= t1.y) : (y += 1) {
+        @setFloatMode(std.builtin.FloatMode.Optimized);
         var segment_height: i32 = t1.y - t0.y + 1;
         var alpha: f32 = f(y - t0.y) / f(total_height);
         var beta: f32 = f(y - t0.y) / f(segment_height); // be careful with divisions by zero
@@ -161,8 +187,11 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
-            set_bitmap_pixel(bitmap, j, y, col.to_rgba32());
+            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{.x = f(j), .y = f(y)});
+            var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
+            var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
+            var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
+            set_bitmap_pixel(bitmap, j, y, col.to_rgba32().mul(tex_col));
         }
     }
     y = t1.y;
@@ -175,8 +204,12 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            var col: Color = get_triangle_interpolated_color(total_area, vtx1, vtx2, vtx3, .{.x = f(j), .y = f(y)});
-            set_bitmap_pixel(bitmap, j, y, col.to_rgba32()); // attention, due to int casts t0.y+i != A.y
+            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{.x = f(j), .y = f(y)});
+            var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
+            var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
+            var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
+            set_bitmap_pixel(bitmap, j, y, col.to_rgba32().mul(tex_col));
+            // set_bitmap_pixel(bitmap, j, y, tex_col);
         }
     }
 

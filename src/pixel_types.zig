@@ -1,7 +1,32 @@
 const std = @import("std");
 const math = std.math;
 
-pub const rgba32 = extern struct { r: u8, g: u8, b: u8, a: u8 };
+fn f(int: i32) f32 {
+    return @intToFloat(f32, int);
+}
+
+fn i(float: f32) i32 {
+    return @floatToInt(i32, float);
+}
+
+fn tu8(float: f32) u8 {
+    return @floatToInt(u8, float);
+}
+
+pub const rgba32 = extern struct { 
+    r: u8, 
+    g: u8, 
+    b: u8, 
+    a: u8,
+    pub fn mul(self: rgba32, col: rgba32) rgba32 {
+        return .{
+            .r = tu8(f(self.r) * (f(col.r) / 255)),
+            .g = tu8(f(self.g) * (f(col.g) / 255)),
+            .b = tu8(f(self.b) * (f(col.b) / 255)),
+            .a = tu8(f(self.a) * (f(col.a) / 255)),
+        };
+    }
+};
 
 pub const argb32 = extern struct { a: u8, r: u8, g: u8, b: u8 };
 
