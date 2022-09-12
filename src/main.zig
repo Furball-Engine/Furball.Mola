@@ -94,16 +94,16 @@ fn triangle_area(a: Vector2, b: Vector2, c: Vector2) f32 {
 }
 
 fn get_barycentric_coordinates(total_area: f32, a: Vector2, b: Vector2, c: Vector2, p: Vector2) Vector3 {
-    var bary: Vector3 = .{.x = 0, .y = 0, .z = 0};
+    var bary: Vector3 = .{ .x = 0, .y = 0, .z = 0 };
 
     // A \
     // |\   \
-    // | \     \ 
-    // |   \      \ 
+    // | \     \
+    // |   \      \
     // |     p-------C
     // |   /      /
     // | /     /
-    // |/   /     
+    // |/   /
     // B /
 
     //Get area of split triangles
@@ -115,9 +115,9 @@ fn get_barycentric_coordinates(total_area: f32, a: Vector2, b: Vector2, c: Vecto
     bary.y = cap_area / total_area; //B
     bary.z = abp_area / total_area; //C
 
-    if(bary.x < 0) bary.x = -bary.x;
-    if(bary.y < 0) bary.y = -bary.y;
-    if(bary.z < 0) bary.z = -bary.z;
+    if (bary.x < 0) bary.x = -bary.x;
+    if (bary.y < 0) bary.y = -bary.y;
+    if (bary.z < 0) bary.z = -bary.z;
 
     return bary;
 }
@@ -134,27 +134,21 @@ fn get_triangle_interpolated_color(a: Vertex, b: Vertex, c: Vertex, bary: Vector
 
 fn get_triangle_interpolated_tex_coord(a: Vertex, b: Vertex, c: Vertex, bary: Vector3) Vector2 {
     @setFloatMode(std.builtin.FloatMode.Optimized);
-    return .{
-        .x = (a.texture_coordinate.x * bary.x) + (b.texture_coordinate.x * bary.y) + (c.texture_coordinate.x * bary.z),
-        .y = (a.texture_coordinate.y * bary.x) + (b.texture_coordinate.y * bary.y) + (c.texture_coordinate.y * bary.z)
-    };
+    return .{ .x = (a.texture_coordinate.x * bary.x) + (b.texture_coordinate.x * bary.y) + (c.texture_coordinate.x * bary.z), .y = (a.texture_coordinate.y * bary.x) + (b.texture_coordinate.y * bary.y) + (c.texture_coordinate.y * bary.z) };
 }
 
 fn sample_texture(bitmap: *RenderBitmap, tex_coord: Vector2) ColorRgba32 {
     @setFloatMode(std.builtin.FloatMode.Optimized);
-    var finalCoords: Vector2i = .{
-        .x = @mod(i(tex_coord.x * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.width)), 
-        .y = @mod(i(tex_coord.y * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.height))
-    };
+    var finalCoords: Vector2i = .{ .x = @mod(i(tex_coord.x * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.width)), .y = @mod(i(tex_coord.y * @intToFloat(f32, bitmap.width)), @intCast(i32, bitmap.height)) };
 
-    switch(bitmap.pixel_type) {
+    switch (bitmap.pixel_type) {
         pixel_types.pixel_type.rgba32 => {
             return bitmap.rgba32ptr[(@intCast(usize, finalCoords.y) * @intCast(usize, bitmap.width)) + @intCast(usize, finalCoords.x)];
         },
         pixel_types.pixel_type.argb32 => {
             var argb32_col: ColorArgb32 = bitmap.argb32ptr[(@intCast(usize, finalCoords.y) * @intCast(usize, bitmap.width)) + @intCast(usize, finalCoords.x)];
-            return .{.r = argb32_col.r, .g = argb32_col.g, .b = argb32_col.b, .a = argb32_col.a};
-        }
+            return .{ .r = argb32_col.r, .g = argb32_col.g, .b = argb32_col.b, .a = argb32_col.a };
+        },
     }
 }
 
@@ -165,7 +159,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
     var total_area: f32 = triangle_area(vtx1.position, vtx2.position, vtx3.position);
 
     //Makes sure we dont do anything silly with a 0 area triangle
-    if(total_area == 0)
+    if (total_area == 0)
         return;
 
     var t0: Vector2i = .{ .x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y) };
@@ -188,7 +182,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{.x = f(j), .y = f(y)});
+            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
             var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
             var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
@@ -206,7 +200,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{.x = f(j), .y = f(y)});
+            var bary: Vector3 = get_barycentric_coordinates(total_area, vtx1.position, vtx2.position, vtx3.position, .{ .x = f(j), .y = f(y) });
             var col: Color = get_triangle_interpolated_color(vtx1, vtx2, vtx3, bary);
             var tex: Vector2 = get_triangle_interpolated_tex_coord(vtx1, vtx2, vtx3, bary);
             var tex_col: ColorRgba32 = sample_texture(@intToPtr(*RenderBitmap, @intCast(usize, vtx1.tex_id)), tex);
@@ -240,8 +234,8 @@ export fn set_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32, col: pixel_typ
 }
 
 export fn get_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32) callconv(.C) ColorRgba32 {
-    if(x >= bitmap.width or y >= bitmap.height)
-        return .{.r = 0, .g = 0, .b = 0, .a = 0};
+    if (x >= bitmap.width or y >= bitmap.height)
+        return .{ .r = 0, .g = 0, .b = 0, .a = 0 };
 
     var pos = (@intCast(usize, y) * @intCast(usize, bitmap.width)) + @intCast(usize, x);
 
@@ -250,7 +244,7 @@ export fn get_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32) callconv(.C) C
             return bitmap.rgba32ptr[pos];
         },
         pixel_types.pixel_type.argb32 => {
-            var col: ColorRgba32 = .{.r = bitmap.argb32ptr[pos].r, .g = bitmap.argb32ptr[pos].g, .b = bitmap.argb32ptr[pos].b, .a = bitmap.argb32ptr[pos].a};
+            var col: ColorRgba32 = .{ .r = bitmap.argb32ptr[pos].r, .g = bitmap.argb32ptr[pos].g, .b = bitmap.argb32ptr[pos].b, .a = bitmap.argb32ptr[pos].a };
 
             return col;
         },
