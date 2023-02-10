@@ -6,8 +6,20 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
 
-    const lib = b.addSharedLibrary("Mola", "src/main.zig", b.version(1, 0, 0));
-    lib.setBuildMode(mode);
-    lib.setTarget(target);
+    // zig fmt: off
+    const lib = b.addSharedLibrary(.{ 
+        .name = "Mola", 
+        .root_source_file = .{ 
+            .path = "src/main.zig" 
+        }, 
+        .version = .{ 
+            .major = 1, 
+            .minor = 0, 
+            .patch = 0 
+        }, 
+        .optimize = mode, 
+        .target = target 
+    });
+    // zig fmt: on
     lib.install();
 }

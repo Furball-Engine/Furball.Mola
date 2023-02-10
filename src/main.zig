@@ -192,7 +192,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            if(j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
+            if (j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
                 y < bitmap.scissor_y or y > bitmap.scissor_y + bitmap.scissor_h)
                 continue;
 
@@ -216,7 +216,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
         if (a.x > b.x) std.mem.swap(Vector2i, &a, &b);
         var j: i32 = a.x;
         while (j <= b.x) : (j += 1) {
-            if(j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
+            if (j < bitmap.scissor_x or j > bitmap.scissor_x + bitmap.scissor_w or
                 y < bitmap.scissor_y or y > bitmap.scissor_y + bitmap.scissor_h)
                 continue;
 

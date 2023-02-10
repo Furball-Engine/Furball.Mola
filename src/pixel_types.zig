@@ -27,14 +27,10 @@ pub const rgba32 = extern struct {
     b: u8,
     a: u8,
     pub fn mul(self: rgba32, col: rgba32) rgba32 {
-        var r: u16 = 0;
-        var g: u16 = 0;
-        var b: u16 = 0;
-        var a: u16 = 0;
-        _ = @mulWithOverflow(u16, self.r, col.r, &r);
-        _ = @mulWithOverflow(u16, self.g, col.g, &g);
-        _ = @mulWithOverflow(u16, self.b, col.b, &b);
-        _ = @mulWithOverflow(u16, self.a, col.a, &a);
+        var r: u16 = self.r * col.r;
+        var g: u16 = self.g * col.g;
+        var b: u16 = self.b * col.b;
+        var a: u16 = self.a * col.a;
 
         return .{
             .r = @truncate(u8, (r + 255) / 256),
@@ -44,11 +40,11 @@ pub const rgba32 = extern struct {
         };
     }
     pub fn alpha_blend(self: rgba32, col: rgba32) rgba32 {
-        return .{
+        return .{ 
             .r = alpha_blend_single(self.r, col.r, self.a), 
             .g = alpha_blend_single(self.g, col.g, self.a), 
             .b = alpha_blend_single(self.b, col.b, self.a), 
-            .a = 255
+            .a = 255 
         };
     }
     pub fn to_rgba128(self: rgba32) rgba128 {
@@ -64,7 +60,7 @@ pub const rgba32 = extern struct {
         return self.r == col.r and self.g == col.g and self.b == col.b and self.a == col.a;
     }
     pub fn to_argb32(self: rgba32) argb32 {
-        return .{.r = self.r, .g = self.g, .b = self.b, .a = self.a};
+        return .{ .r = self.r, .g = self.g, .b = self.b, .a = self.a };
     }
 };
 
