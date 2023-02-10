@@ -90,11 +90,13 @@ fn i(float: f32) i32 {
 }
 
 fn lerp(p0: f32, p1: f32, t: f32) f32 {
+    @setFloatMode(std.builtin.FloatMode.Optimized);
     return p0 + (p1 - p0) * t;
 }
 
 //https://ncalculators.com/geometry/triangle-area-by-3-points.htm
 fn triangle_area(a: Vector2, b: Vector2, c: Vector2) f32 {
+    @setFloatMode(std.builtin.FloatMode.Optimized);
     return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2;
 }
 
@@ -167,6 +169,8 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
     if (total_area == 0)
         return;
 
+    // std.debug.print("x:{d} y:{d}\n", .{vtx1.position.x, vtx1.position.y});
+
     var t0: Vector2i = .{ .x = @floatToInt(i32, vtx1.position.x), .y = @floatToInt(i32, vtx1.position.y) };
     var t1: Vector2i = .{ .x = @floatToInt(i32, vtx2.position.x), .y = @floatToInt(i32, vtx2.position.y) };
     var t2: Vector2i = .{ .x = @floatToInt(i32, vtx3.position.x), .y = @floatToInt(i32, vtx3.position.y) };
@@ -178,6 +182,7 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
     var total_height: i32 = t2.y - t0.y;
     var y: i32 = t0.y;
     while (y <= t1.y) : (y += 1) {
+        //Now we are doing performance-critical things, so we want to use optimized mode
         @setFloatMode(std.builtin.FloatMode.Optimized);
         var segment_height: i32 = t1.y - t0.y + 1;
         var alpha: f32 = f(y - t0.y) / f(total_height);
@@ -201,6 +206,8 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
     }
     y = t1.y;
     while (y <= t2.y) : (y += 1) {
+        //Now we are doing performance-critical things, so we want to use optimized mode
+        @setFloatMode(std.builtin.FloatMode.Optimized);
         var segment_height: i32 = t2.y - t1.y + 1;
         var alpha: f32 = f(y - t0.y) / f(total_height);
         var beta: f32 = f(y - t1.y) / f(segment_height); // be careful with divisions by zero
@@ -221,10 +228,6 @@ export fn rasterize_triangle(bitmap: *RenderBitmap, vtx1: Vertex, vtx2: Vertex, 
             set_bitmap_pixel(bitmap, j, y, vertex_color.to_rgba32().mul(tex_color).alpha_blend(get_bitmap_pixel(bitmap, j, y)));
         }
     }
-
-    // rasterize_line(bitmap, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
-    // rasterize_line(bitmap, .{.x = @intToFloat(f32, ax1), .y = @intToFloat(f32, ay1)}, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.r = 0, .g = 255, .b = 0, .a = 255});
-    // rasterize_line(bitmap, .{.x = @intToFloat(f32, ax2), .y = @intToFloat(f32, ay2)}, .{.x = @intToFloat(f32, ax0), .y = @intToFloat(f32, ay0)}, .{.r = 255, .g = 0, .b = 0, .a = 255});
 }
 
 export fn set_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32, col: pixel_types.rgba32) callconv(.C) void {
@@ -263,47 +266,3 @@ export fn get_bitmap_pixel(bitmap: *RenderBitmap, x: i32, y: i32) callconv(.C) C
         },
     }
 }
-
-// export fn rasterize_line(bitmap: *RenderBitmap, p0: Vector2, p1: Vector2, col: pixel_types.rgba32) callconv(.C) void {
-//     var ax0: i32 = @floatToInt(i32, p0.x);
-//     var ay0: i32 = @floatToInt(i32, p0.y);
-//     var ax1: i32 = @floatToInt(i32, p1.x);
-//     var ay1: i32 = @floatToInt(i32, p1.y);
-
-//     std.debug.print("Drawing line with points {d}x{d},{d}x{d}\n", .{ ax0, ay0, ax1, ay1 });
-
-//     var steep: bool = false;
-//     //Check whether the the difference in X is less than the difference in Y (aka is slope greater than 0.5)
-//     if ((std.math.absInt(ax0 - ax1) catch @panic("Unable to ABS x0 and x1")) < (std.math.absInt(ay0 - ay1) catch @panic("Unable to ABS y0 and y1"))) {
-//         swap_ints(&ax0, &ay0);
-//         swap_ints(&ax1, &ay1);
-//         steep = true;
-//     }
-//     //If the first point is to the right of the second point, swap the points
-//     if (ax0 > ax1) {
-//         swap_ints(&ax0, &ax1);
-//         swap_ints(&ay0, &ay1);
-//     }
-//     //Get the difference in X
-//     var dx: i32 = ax1 - ax0;
-//     //Get the difference in Y
-//     var dy: i32 = ay1 - ay0;
-//     //The error in difference
-//     var derror2: i32 = (std.math.absInt(dy) catch @panic("Unable to ABS dy")) * 2;
-//     //The distance to the best straight line from our current position
-//     var error2: i32 = 0;
-//     var y: i32 = ay0;
-//     var x: i32 = ax0;
-//     while (x <= ax1) : (x += 1) {
-//         if (steep) {
-//             set_bitmap_pixel(bitmap, y, x, col);
-//         } else {
-//             set_bitmap_pixel(bitmap, x, y, col);
-//         }
-//         error2 += derror2;
-//         if (error2 > dx) {
-//             y += (if (ay1 > ay0) 1 else -1);
-//             error2 -= dx * 2;
-//         }
-//     }
-// }

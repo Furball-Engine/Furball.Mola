@@ -18,4 +18,9 @@ pub const Vector2 = extern struct { x: f32, y: f32, pub fn eq(self: Vector2, v2:
 pub const Vector3 = extern struct { x: f32, y: f32, z: f32 };
 pub const Vector2i = extern struct { x: i32, y: i32 };
 
-pub const Vertex = extern struct { position: Vector2, texture_coordinate: Vector2, color: PixelType.rgba128, tex_id: c_long };
+pub const Vertex = extern struct { 
+    position: Vector2, 
+    texture_coordinate: Vector2, 
+    color: PixelType.rgba128, 
+    tex_id: c_long 
+};

@@ -1,14 +1,13 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    var mode: std.builtin.Mode = b.standardReleaseOptions();
-    // mode = std.builtin.Mode.Debug;
-
-    // b.use_stage1 = true;
+    const target = b.standardTargetOptions(.{});
+    const mode = b.standardOptimizeOption(.{});
 
     const lib = b.addSharedLibrary("Mola", "src/main.zig", b.version(1, 0, 0));
     lib.setBuildMode(mode);
+    lib.setTarget(target);
     lib.install();
 }
